@@ -1,7 +1,22 @@
-export default function Header() {
+import { ReactNode } from "react";
+
+type HeaderProps = {
+  children: ReactNode;
+};
+
+export default function Header({ children }: HeaderProps) {
   return (
     <header className="header">
-      <div className="header__top"></div>
+      {children}
     </header>
   );
 }
+
+export function HeaderTop({ children }: HeaderProps) {
+  return (
+    <div className="header__top">
+      {children}
+    </div>
+  );
+}
+
