@@ -1,4 +1,9 @@
-export default function SearchForm({ searchText, setSearchText }) {
+type SearchFormProps = {
+  searchText: string;
+  setSearchText: (text: string) => void;
+};
+
+export default function SearchForm({ searchText, setSearchText }: SearchFormProps) {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
