@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ExpandedJobItem, JobItem } from "./types";
 import { BASE_API_URL } from "./constants";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { handleError } from "./utils";
+import { BookmarksContext } from "../contexts/BookmarksContext";
 
 type jobItemAPIResponse = {
     public: boolean;
@@ -27,33 +29,64 @@ export const useJobItem = (id: number | null) => {
             refetchOnWindowFocus: false,
             retry: false,
             enabled: !!id,
-            onError: (error) => { console.log(error); }
+            onError: handleError
         }
     );
     return { jobItem: data?.jobItem, isLoading: isInitialLoading };
 };
 
-export const useJobItems = (searchText: string) => {
-    const [jobItems, setJobItems] = useState<JobItem[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+export function useJobItems(ids: number[]) {
+    const results = useQueries({
+        queries: ids.map(id => ({
+            queryKey: ['job-item', id],
+            queryFn: () => fetchJobItem(id),
+            staleTime: 1000 * 60 * 60,
+            refetchOnWindowFocus: false,
+            retry: false,
+            enabled: !!id,
+            onError: handleError
+        })),
+    });
+    const jobItems = results.map(result => result.data?.jobItem).filter(jobItem => !!jobItem) as ExpandedJobItem[];
+    const isLoading = results.some(result => result.isLoading);
 
-    const numberOfResults = jobItems.length;
-    const jobitemsSliced = jobItems.slice(0, 7);
+    return {jobItems, isLoading}
+}
 
-    useEffect(() => {
-        if (!searchText) return;
-        const fetchData = async () => {
-            setIsLoading(true);
-            const response = await fetch(`${BASE_API_URL}?search=${searchText}`);
-            const data = await response.json();
-            setIsLoading(false);
-            setJobItems(data.jobItems);
-        };
-        fetchData();
-    }, [searchText]);
+// ---------------------------------------------------------------------------------
 
-    return { jobItems: jobitemsSliced, isLoading, numberOfResults };
+type jobItemsAPIResponse = {
+    public: boolean;
+    sorted: boolean;
+    jobItems: JobItem[];
 };
+
+const fetchJobItems = async (searchText: string): Promise<jobItemsAPIResponse> => {
+    const response = await fetch(`${BASE_API_URL}?search=${searchText}`);
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.description);
+    }
+    const data = await response.json();
+    return data;
+};
+
+export const useSearchQuery = (searchText: string) => {
+    const { data, isInitialLoading } = useQuery(
+        ['job-items', searchText],
+        () => fetchJobItems(searchText),
+        {
+            staleTime: 1000 * 60 * 60,
+            refetchOnWindowFocus: false,
+            retry: false,
+            enabled: !!searchText,
+            onError: handleError
+        }
+    );
+    return { jobItems: data?.jobItems, isLoading: isInitialLoading } as const;
+};
+
+// ---------------------------------------------------------------------------------
 
 export const useActiveId = () => {
     const [activeId, setActiveId] = useState<number | null>(null);
@@ -86,3 +119,27 @@ export const useDebounce = <T>(value: T, delay = 300): T => {
     }, [value, delay]);
     return debouncedValue;
 };
+
+// ---------------------------------------------------------------------------------
+
+export function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+    const [value, setValue] = useState(() => JSON.parse(localStorage.getItem(key) || JSON.stringify(initialValue)));
+
+    useEffect(() => {
+        localStorage.setItem(key, JSON.stringify(value));
+    }, [value, key]);
+
+    return [value, setValue] as const;
+}
+
+// ---------------------------------------------------------------------------------
+
+
+export function useBookmarksContext() {
+    const context = useContext(BookmarksContext);
+
+    if (!context) {
+        throw new Error("useBookmarksContext must be used inside a BookmarksContextProvider");
+    }
+    return context;
+}
