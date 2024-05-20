@@ -1,10 +1,5 @@
 import { ReactNode } from "react";
-import { SortBy } from "../lib/types";
-
-type SortingControlsProps = {
-  onClick: (newSortBy: SortBy) => void;
-  sortBy: SortBy;
-};
+import { useJobItemsContext } from "../lib/hooks";
 
 type SortingButtonProps = {
   onClick: () => void;
@@ -12,7 +7,9 @@ type SortingButtonProps = {
   isActive: boolean;
 };
 
-export default function SortingControls({ onClick, sortBy }: SortingControlsProps) {
+export default function SortingControls() {
+  const { sortBy, handleSort: onClick } = useJobItemsContext();
+
   return (
     <section className="sorting">
       <i className="fa-solid fa-arrow-down-short-wide"></i>

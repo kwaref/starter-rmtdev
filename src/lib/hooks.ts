@@ -4,6 +4,9 @@ import { BASE_API_URL } from "./constants";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { handleError } from "./utils";
 import { BookmarksContext } from "../contexts/BookmarksContext";
+import { ActiveIdContext } from "../contexts/ActiveIdContext";
+import { SearchTextContext } from "../contexts/SearchTextContext";
+import { JobItemsContext } from "../contexts/JobItemsContext";
 
 type jobItemAPIResponse = {
     public: boolean;
@@ -72,6 +75,7 @@ const fetchJobItems = async (searchText: string): Promise<jobItemsAPIResponse> =
 };
 
 export const useSearchQuery = (searchText: string) => {
+    
     const { data, isInitialLoading } = useQuery(
         ['job-items', searchText],
         () => fetchJobItems(searchText),
@@ -155,6 +159,33 @@ export function useBookmarksContext() {
 
     if (!context) {
         throw new Error("useBookmarksContext must be used inside a BookmarksContextProvider");
+    }
+    return context;
+}
+
+export function useActiveIdContext() {
+    const context = useContext(ActiveIdContext);
+
+    if (!context) {
+        throw new Error("useActiveIdContext must be used inside a ActiveIdContextProvider");
+    }
+    return context;
+}
+
+export function useSearchTextContext() {
+    const context = useContext(SearchTextContext);
+
+    if (!context) {
+        throw new Error("useSearchTextContext must be used inside a SearchTextContextProvider");
+    }
+    return context;
+}
+
+export function useJobItemsContext() {
+    const context = useContext(JobItemsContext);
+
+    if (!context) {
+        throw new Error("useJobItemsContext must be used inside a JobItemsContextProvider");
     }
     return context;
 }
